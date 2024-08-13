@@ -1,13 +1,13 @@
 #!/bin/bash
 
+# Get mnemonic phrase from user
+read -p "Enter your mnemonic phrase: " mnemonic_phrase
+
 # Clone the repository
 git clone https://github.com/allora-network/basic-coin-prediction-node
 
 # Change directory
 cd basic-coin-prediction-node
-
-# Get mnemonic phrase from user
-read -p "Enter your mnemonic phrase: " mnemonic_phrase
 
 # Write the JSON content to config.json
 cat <<EOF > config.json
