@@ -3,6 +3,7 @@
 ## Install requirements
 ```
 sudo apt update && sudo apt upgrade -y
+sudo apt install jq
 
 # install docker
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
