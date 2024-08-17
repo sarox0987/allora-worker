@@ -5,11 +5,14 @@ read -p "Enter your mnemonic phrase: " mnemonic_phrase
 
 mkdir custom-allora
 cd custom-allora
-mkdir worker-data
+git clone https://github.com/allora-network/allora-huggingface-walkthrough.git
+cd allora-huggingface-walkthrough
+mkdir worker-data 
 touch worker-data/env_file
 chmod -R 777 worker-data
+rm docker-compose.yaml
 
-cat << EOF > docker-compose.yml
+cat << EOF > docker-compose.yaml
 services:
   custom-inference:
     image: 0xsarox/inference-allora
@@ -35,7 +38,18 @@ EOF
 
 cat <<EOF > config.json
 {
-  "wallet": [
+    "wallet": {
+        "addressKeyName": "test",
+        "addressRestoreMnemonic": "$mnemonic_phrase",
+        "alloraHomeDir": "",
+        "gas": "1000000",
+        "gasAdjustment": 1.0,
+        "nodeRpc": "https://sentries-rpc.testnet-1.testnet.allora.network/",
+        "maxRetries": 1,
+        "delay": 1,
+        "submitTx": false
+    },
+    "worker": [
         {
             "topicId": 1,
             "inferenceEntrypointName": "api-worker-reputer",
@@ -120,54 +134,6 @@ cat <<EOF > config.json
         
     ]
 }
-EOF
-
-cat <<EOF > init.config
-#!/bin/bash
-
-set -e
-
-if [ ! -f config.json ]; then
-    echo "Error: config.json file not found, please provide one"
-    exit 1
-fi
-
-nodeName=$(jq -r '.wallet.addressKeyName' config.json)
-if [ -z "$nodeName" ]; then
-    echo "No wallet name provided for the node, please provide your preferred wallet name. config.json >> wallet.addressKeyName"
-    exit 1
-fi
-
-# Ensure the worker-data directory exists
-mkdir -p ./worker-data
-
-json_content=$(cat ./config.json)
-stringified_json=$(echo "$json_content" | jq -c .)
-
-mnemonic=$(jq -r '.wallet.addressRestoreMnemonic' config.json)
-if [ -n "$mnemonic" ]; then
-    echo "ALLORA_OFFCHAIN_NODE_CONFIG_JSON='$stringified_json'" > ./worker-data/env_file
-    echo "NAME=$nodeName" >> ./worker-data/env_file
-    echo "ENV_LOADED=true" >> ./worker-data/env_file
-    
-    echo "wallet mnemonic already provided by you, loading config.json . Please proceed to run docker compose"
-    exit 1
-fi
-
-if [ ! -f ./worker-data/env_file ]; then
-    echo "ENV_LOADED=false" > ./worker-data/env_file
-fi
-
-ENV_LOADED=$(grep '^ENV_LOADED=' ./worker-data/env_file | cut -d '=' -f 2)
-if [ "$ENV_LOADED" = "false" ]; then
-    json_content=$(cat ./config.json)
-    stringified_json=$(echo "$json_content" | jq -c .)
-    
-    docker run -it --entrypoint=bash -v $(pwd)/worker-data:/data -v $(pwd)/scripts:/scripts -e NAME="${nodeName}" -e ALLORA_OFFCHAIN_NODE_CONFIG_JSON="${stringified_json}" alloranetwork/allora-chain:latest -c "bash /scripts/init.sh"
-    echo "config.json saved to ./worker-data/env_file"
-else
-    echo "config.json is already loaded, skipping the operation. You can set ENV_LOADED variable to false in ./worker-data/env_file to reload the config.json"
-
 EOF
 
 chmod +x init.config
