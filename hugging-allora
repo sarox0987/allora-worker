@@ -7,10 +7,12 @@ mkdir hugging-allora
 cd hugging-allora
 git clone https://github.com/allora-network/allora-huggingface-walkthrough.git
 cd allora-huggingface-walkthrough
+mkdir worker-data
+touch worker-data/env_file
 chmod -R 777 worker-data
-rm docker-compose.yml
+rm docker-compose.yaml
 
-cat << EOF > docker-compose.yml
+cat << EOF > docker-compose.yaml
 services:
   inference:
     container_name: hugging-inference
@@ -40,7 +42,18 @@ EOF
 # Write the JSON content to config.json
 cat <<EOF > config.json
 {
-  "wallet": [
+    "wallet": {
+        "addressKeyName": "test",
+        "addressRestoreMnemonic": "$mnemonic_phrase",
+        "alloraHomeDir": "",
+        "gas": "1000000",
+        "gasAdjustment": 1.0,
+        "nodeRpc": "https://allora-rpc.testnet-1.testnet.allora.network/",
+        "maxRetries": 1,
+        "delay": 1,
+        "submitTx": false
+    },
+    "worker": [
         {
             "topicId": 1,
             "inferenceEntrypointName": "api-worker-reputer",
@@ -126,8 +139,6 @@ cat <<EOF > config.json
     ]
 }
 EOF
-
-echo "Config file created with specified content."
 
 chmod +x init.config
 ./init.config 
