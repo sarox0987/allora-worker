@@ -5,7 +5,8 @@ read -p "Enter your mnemonic phrase: " mnemonic_phrase
 
 mkdir custom-allora
 cd custom-allora
-mkdir worker-data 
+mkdir worker-data
+touch worker-data/env-file
 chmod -R 777 worker-data
 
 cat << EOF > docker-compose.yml
