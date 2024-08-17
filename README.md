@@ -3,7 +3,7 @@
 ## Install requirements
 ```
 sudo apt update && sudo apt upgrade -y
-sudo apt install jq
+sudo apt install jq -y
 
 # install docker
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
@@ -27,19 +27,38 @@ docker-compose --version
 request some faucet from the [Allora Testnet Faucet](https://faucet.testnet-1.testnet.allora.network/) 
 
 
-run the script and pass your mnemonic phrase to it
+## Run with custom model and pass your mnemonic phrase to it
 ```
-curl -LOs https://raw.githubusercontent.com/sarox0987/allora-worker/main/run.sh && bash ./run.sh
+curl -LOs https://raw.githubusercontent.com/sarox0987/allora-worker/main/custom-allora.sh && bash ./custom-allora.sh
 ```
 <img width="937" alt="Screenshot 2024-08-13 at 10 35 47 PM" src="https://github.com/user-attachments/assets/92ea736b-3323-480e-a1f2-560bc96e7ea8">
 
-make sure all 3 containers are running with `docker ps`
+make sure both `custom-worker` & `custom-inference` containers are running with `docker ps`
 
-<img width="1429" alt="Screenshot 2024-08-13 at 10 38 29 PM" src="https://github.com/user-attachments/assets/fe41f51b-95ac-40cf-a66d-5eca703ee184">
+<img width="1426" alt="Screenshot 2024-08-17 at 2 50 20 PM" src="https://github.com/user-attachments/assets/cbf981d2-93eb-4e4a-996b-2abd8ecb17e7">
 
+check the worker container with `docker logs -f custom-worker` command
 
-check the worker container with `docker logs -f worker` command, and make sure it registered for topics 1 and 2
+<img width="816" alt="Screenshot 2024-08-17 at 3 30 29 PM" src="https://github.com/user-attachments/assets/a24a19b0-36a5-407d-8fb5-46c72c63c819">
 
-<img width="1429" alt="Screenshot 2024-08-13 at 10 39 12 PM" src="https://github.com/user-attachments/assets/937029bf-3a47-4131-b493-6a7ef77eb72f">
+make sure `custom-inference` is responsive
+```
+curl http://localhost:8001/inference/ETH
+```
 
+## Run with hugging model and pass your mnemonic phrase to it
+```
+curl -LOs https://raw.githubusercontent.com/sarox0987/allora-worker/main/hugging-allora.sh && bash ./hugging-allora.sh
+```
+
+make sure both `hugging-worker` & `hugging-inference` containers are running with `docker ps`
+
+<img width="1406" alt="Screenshot 2024-08-17 at 3 15 37 PM" src="https://github.com/user-attachments/assets/a26281af-ecc2-497d-8379-981eac14d4d6">
+
+check the worker container with `docker logs -f hugging-worker` command
+
+make sure `hugging-inference` is responsive
+```
+curl http://localhost:8002/inference/ETH
+```
 
