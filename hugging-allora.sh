@@ -14,7 +14,7 @@ rm docker-compose.yaml
 
 cat << EOF > docker-compose.yaml
 services:
-  inference:
+  hugging-inference:
     container_name: hugging-inference
     build:
       context: .
@@ -23,7 +23,7 @@ services:
     ports:
       - "8002:8000"
 
-  worker:
+  hugging-worker:
     container_name: hugging-worker
     image: alloranetwork/allora-offchain-node:latest
     volumes:
