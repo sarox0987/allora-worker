@@ -1,38 +1,88 @@
 #!/bin/bash
 
-# Get mnemonic phrase from user
-read -p "Enter your mnemonic phrase: " mnemonic_phrase
+rpc="https://allora-rpc.testnet.allora.network"
 
-mkdir custom-allora
-cd custom-allora
-git clone https://github.com/allora-network/allora-huggingface-walkthrough.git
-cd allora-huggingface-walkthrough
-mkdir worker-data 
-touch worker-data/env_file
-chmod -R 777 worker-data
-rm docker-compose.yaml
+read -p "Enter your worker index: " index
+read -p "Enter your mnemonic phrase: " mnemonic_phrase
+read -p "Enter your upshot apikey: " upshot_apikey
+
+mkdir worker-data-$index 
+chmod -R 777 worker-data-$index
+
+cat << EOF > .env
+RPC=$rpc
+UPSHOT_APIKEY="$upshot_apikey"
+EOF
+
 
 cat << EOF > docker-compose.yaml
 services:
   custom-inference:
-    image: 0xsarox/inference-allora
+    build: .
+    image: custom-inference
     container_name: custom-inference
+    env_file: .env
     ports:
       - "8001:8000"
 
-  custom-worker:
-    container_name: custom-worker
+  custom-worker-$index:
+    container_name: custom-worker-$index
     image: alloranetwork/allora-offchain-node:latest
     volumes:
-      - ./worker-data:/data
+      - ./worker-data-$index:/data
     depends_on:
       - custom-inference
     env_file:
-      - ./worker-data/env_file
-  
-volumes:
-  inference-data:
-  worker-data:
+      - ./worker-data-$index/env_file
+EOF
+
+
+cat << EOF > init.config
+#!/bin/bash
+
+set -e
+
+if [ ! -f config.json ]; then
+    echo "Error: config.json file not found, please provide one"
+    exit 1
+fi
+
+nodeName=\$(jq -r '.wallet.addressKeyName' config.json)
+if [ -z "\$nodeName" ]; then
+    echo "No wallet name provided for the node, please provide your preferred wallet name. config.json >> wallet.addressKeyName"
+    exit 1
+fi
+
+# Ensure the worker-data-$index directory exists
+mkdir -p ./worker-data-$index
+
+json_content=\$(cat ./config.json)
+stringified_json=\$(echo "\$json_content" | jq -c .)
+
+mnemonic=\$(jq -r '.wallet.addressRestoreMnemonic' config.json)
+if [ -n "\$mnemonic" ]; then
+    echo "ALLORA_OFFCHAIN_NODE_CONFIG_JSON='\$stringified_json'" > ./worker-data-$index/env_file
+    echo "NAME=\$nodeName" >> ./worker-data-$index/env_file
+    echo "ENV_LOADED=true" >> ./worker-data-$index/env_file
+    
+    echo "wallet mnemonic already provided by you, loading config.json . Please proceed to run docker compose"
+    exit 1
+fi
+
+if [ ! -f ./worker-data-$index/env_file ]; then
+    echo "ENV_LOADED=false" > ./worker-data-$index/env_file
+fi
+
+ENV_LOADED=\$(grep '^ENV_LOADED=' ./worker-data-$index/env_file | cut -d '=' -f 2)
+if [ "\$ENV_LOADED" = "false" ]; then
+    json_content=\$(cat ./config.json)
+    stringified_json=\$(echo "\$json_content" | jq -c .)
+    
+    docker run -it --entrypoint=bash -v \$(pwd)/worker-data-$index:/data -v \$(pwd)/scripts:/scripts -e NAME=\${nodeName}" -e ALLORA_OFFCHAIN_NODE_CONFIG_JSON="\${stringified_json}" alloranetwork/allora-chain:latest -c "bash /scripts/init.sh"
+    echo "config.json saved to ./worker-data-$index/env_file"
+else
+    echo "config.json is already loaded, skipping the operation. You can set ENV_LOADED variable to false in ./worker-data-$index/env_file to reload the config.json"
+fi
 EOF
 
 
@@ -44,10 +94,10 @@ cat <<EOF > config.json
         "alloraHomeDir": "",
         "gas": "1000000",
         "gasAdjustment": 1.0,
-        "nodeRpc": "https://allora-rpc.testnet-1.testnet.allora.network/",
+        "nodeRpc": "$rpc",
         "maxRetries": 1,
         "delay": 1,
-        "submitTx": false
+        "submitTx": true
     },
     "worker": [
         {
@@ -129,6 +179,15 @@ cat <<EOF > config.json
             "parameters": {
                 "InferenceEndpoint": "http://custom-inference:8000/inference/{Token}",
                 "Token": "ARB"
+            }
+        },
+        {
+            "topicId": 10,
+            "inferenceEntrypointName": "api-worker-reputer",
+            "loopSeconds": 5,
+            "parameters": {
+                "InferenceEndpoint": "http://custom-inference:8000/inference/{Token}",
+                "Token": "MEME"
             }
         }
         
