@@ -26,27 +26,47 @@ docker-compose --version
 
 request some faucet from the [Allora Testnet Faucet](https://faucet.testnet-1.testnet.allora.network/) 
 
+## Stop the old version
+If you've previously run the old version and want to stop it before proceeding, follow these commands
+```
+docker stop custom-inference
+docker stop custom-worker
+docker container prune -f
+```
 
 ## Run with custom model and pass your mnemonic phrase to it
+1. Create an account and obtain an Upshot ApiKey [here](https://developer.upshot.xyz)
+
+2. Clone the git repository
 ```
-curl -LOs https://raw.githubusercontent.com/sarox0987/allora-worker/main/custom-allora.sh && bash ./custom-allora.sh
+git clone https://github.com/sarox0987/allora-worker.git
+cd allora-worker
 ```
-<img width="937" alt="Screenshot 2024-08-13 at 10 35 47 PM" src="https://github.com/user-attachments/assets/92ea736b-3323-480e-a1f2-560bc96e7ea8">
 
-make sure both `custom-worker` & `custom-inference` containers are running with `docker ps`
+3. Run the bash script
+```
+bash run.sh
+```
+* **Index:** Set your worker index.(the index gives you the ability to run multiple workers on one server)
+* **Mnemonic Phrase:** Import you menmonic phrase
+* **Upshot ApiKey:** Import your upshot apikey
 
-<img width="1426" alt="Screenshot 2024-08-17 at 2 50 20 PM" src="https://github.com/user-attachments/assets/cbf981d2-93eb-4e4a-996b-2abd8ecb17e7">
 
-check the worker container with `docker logs -f custom-worker` command
+make sure both `custom-worker-0` & `custom-inference` containers are running with `docker ps`
+<img width="1325" alt="Screenshot 2024-09-09 at 3 33 15 PM" src="https://github.com/user-attachments/assets/e54c50ff-8fb6-4983-8586-5ddef8768a49">
+
+
+check the worker container with `docker logs -f custom-worker-0` command
 
 <img width="816" alt="Screenshot 2024-08-17 at 3 30 29 PM" src="https://github.com/user-attachments/assets/a24a19b0-36a5-407d-8fb5-46c72c63c819">
 
-make sure `custom-inference` is responsive
+make sure `custom-inference` returns correct response
 ```
 curl http://localhost:8001/inference/ETH
+curl http://localhost:8001/inference/MEME
 ```
 
-## Run with hugging model and pass your mnemonic phrase to it
+## [DEPRECATED] Run with hugging model and pass your mnemonic phrase to it
 ```
 curl -LOs https://raw.githubusercontent.com/sarox0987/allora-worker/main/hugging-allora.sh && bash ./hugging-allora.sh
 ```
