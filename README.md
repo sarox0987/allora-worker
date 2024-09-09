@@ -34,7 +34,7 @@ docker stop custom-worker
 docker container prune -f
 ```
 
-## Run with custom model and pass your mnemonic phrase to it
+## Run the custom model
 1. Create an account and obtain an Upshot ApiKey [here](https://developer.upshot.xyz)
 
 2. Clone the git repository
