@@ -59,7 +59,7 @@ func main() {
 			fmt.Println(err)
 			return
 		}
-		rate = multiplyChangeRate(rate)
+		rate = multiplyChangeRate(rate, symbol)
 		close, _ := strconv.ParseFloat(k.Close, 64)
 		price := close + (close * rate)
 
@@ -104,6 +104,26 @@ func handleMemeRequest(c *gin.Context, cfg *envConfig) {
 	mpf, _ := strconv.ParseFloat(mp, 64)
 
 	c.String(http.StatusOK, strconv.FormatFloat(random(mpf), 'g', -1, 64))
+}
+
+func handleCryptoRequest(c *gin.Context, token string) {
+	symbol := fmt.Sprintf("%sUSDT", token)
+
+	k, err := getLastKlines(symbol, "15m")
+	if err != nil {
+		c.String(500, "Error fetching klines")
+		return
+	}
+
+	currentPrice, _ := strconv.ParseFloat(k.Close, 64)
+	
+	predictedPrice, err := predictPrice(symbol, currentPrice)
+	if err != nil {
+		c.String(500, "Error predicting price")
+		return
+	}
+
+	c.String(200, strconv.FormatFloat(predictedPrice, 'g', -1, 64))
 }
 
 func getLastKlines(symbol, interval string) (*Kline, error) {
@@ -171,12 +191,32 @@ func calculatePriceChangeRate(kline Kline) (float64, error) {
 	return priceChangeRate, nil
 }
 
-func multiplyChangeRate(changeRate float64) float64 {
+func multiplyChangeRate(changeRate float64, symbol string) float64 {
 	r := rand.New(rand.NewSource(uint64(time.Now().UnixNano())))
 
-	multiplier := r.Float64()*0.8 + 0.1
+	// Customize multiplier range based on the symbol
+	var multiplierMin, multiplierMax float64
+	switch symbol {
+	case "BTCUSDT":
+		multiplierMin, multiplierMax = 0.9, 1.1 // Less volatile
+	case "ETHUSDT":
+		multiplierMin, multiplierMax = 0.85, 1.15 // Moderate volatility
+	default:
+		multiplierMin, multiplierMax = 0.8, 1.2 // More volatile
+	}
+
+	multiplier := r.Float64()*(multiplierMax-multiplierMin) + multiplierMin
 	newChangeRate := changeRate * multiplier
-	return newChangeRate + changeRate
+
+	// Add trend bias
+	trendBias := 0.005 // 0.5% bias
+	if changeRate > 0 {
+		newChangeRate += trendBias // Slight bullish bias
+	} else {
+		newChangeRate -= trendBias // Slight bearish bias
+	}
+
+	return newChangeRate
 }
 
 // GetTokenPrice function takes the token address as a string and returns the price as a float64
@@ -306,4 +346,15 @@ func random(price float64) float64 {
 	priceChange := price * (randomPercent / 100)
 
 	return price + priceChange
+}
+
+func calculateSMA(prices []float64, period int) float64 {
+	if len(prices) < period {
+		return 0
+	}
+	sum := 0.0
+	for i := len(prices) - period; i < len(prices); i++ {
+		sum += prices[i]
+	}
+	return sum / float64(period)
 }
