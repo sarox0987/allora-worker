@@ -66,6 +66,7 @@ make sure `custom-inference` returns correct response
 ```
 curl http://localhost:8001/inference/ETH
 curl http://localhost:8001/inference/MEME
+curl http://localhost:8001/inference/ELECTION
 ```
 
 ## [DEPRECATED] Run with hugging model and pass your mnemonic phrase to it
