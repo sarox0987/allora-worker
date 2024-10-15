@@ -190,6 +190,15 @@ cat <<EOF > config.json
                 "InferenceEndpoint": "http://custom-inference:8000/inference/{Token}",
                 "Token": "MEME"
             }
+        },
+        {
+            "topicId": 11,
+            "inferenceEntrypointName": "api-worker-reputer",
+            "loopSeconds": 5,
+            "parameters": {
+                "InferenceEndpoint": "http://custom-inference:8000/inference/{Token}",
+                "Token": "ELECTION"
+            }
         }
         
     ]

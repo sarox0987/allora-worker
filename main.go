@@ -46,6 +46,11 @@ func main() {
 			return
 		}
 
+		if token == "ELECTION" {
+			handleElectRequest(c)
+			return
+		}
+
 		symbol := fmt.Sprintf("%sUSDT", token)
 
 		k, err := getLastKlines(symbol, "15m")
@@ -179,7 +184,6 @@ func multiplyChangeRate(changeRate float64) float64 {
 	return newChangeRate + changeRate
 }
 
-// GetTokenPrice function takes the token address as a string and returns the price as a float64
 func getMemePrice(network, memeAddress string) (string, error) {
 	url := fmt.Sprintf("https://api.geckoterminal.com/api/v2/simple/networks/%s/token_price/%s", network, memeAddress)
 
@@ -306,4 +310,67 @@ func random(price float64) float64 {
 	priceChange := price * (randomPercent / 100)
 
 	return price + priceChange
+}
+
+type PriceData struct {
+	History []struct {
+		T int64   `json:"t"`
+		P float64 `json:"p"`
+	} `json:"history"`
+}
+
+func handleElectRequest(c *gin.Context) {
+	url := "https://clob.polymarket.com/prices-history?interval=all&market=21742633143463906290569050155826241533067272736897614950488156847949938836455&fidelity=1000"
+	data, err := getPriceData(url)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	price, err := getRandomPrice(data, 100)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	p := strconv.FormatFloat(random(price*100), 'f', 2, 64)
+	fmt.Println("Election Response: ", p)
+	c.String(http.StatusOK, p)
+}
+
+func getPriceData(url string) (*PriceData, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var priceData PriceData
+	err = json.Unmarshal(body, &priceData)
+	if err != nil {
+		return nil, err
+	}
+
+	return &priceData, nil
+}
+
+func getRandomPrice(data *PriceData, n int) (float64, error) {
+	historyLen := len(data.History)
+	if historyLen == 0 {
+		return 0, fmt.Errorf("no price data available")
+	}
+
+	if n > historyLen {
+		n = historyLen
+	}
+
+	rand.Seed(uint64(time.Now().UnixNano()))
+	randomIndex := rand.Intn(n)
+	fmt.Println(data.History[len(data.History)-1])
+	return data.History[historyLen-n+randomIndex].P, nil
 }
